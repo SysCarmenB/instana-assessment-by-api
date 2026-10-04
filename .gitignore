@@ -1,0 +1,16 @@
+# Salidas del assessment: se regeneran en cada corrida y llevan timestamp.
+out/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Configs de cliente reales. El token NUNCA va aqui (se lee de la variable de
+# entorno indicada por instana.api_token_env), pero la base_url y el alcance
+# de un cliente tampoco tienen por que acabar en el repositorio.
+config/client.yaml
+config/*-tenant.yaml
+
+# Gobierno real del cliente (owner/team/runbook). El .example si se versiona.
+config/governance.csv

@@ -1,0 +1,29 @@
+# Copiar a config/client.yaml (o a otro nombre) y ajustar por cliente.
+# No poner el token aqui: se lee desde la variable de entorno indicada en api_token_env.
+
+client_name: "Cliente Demo"
+
+instana:
+  base_url: "https://<tenant>.instana.io"   # SaaS: https://<tenant>.instana.io | self-hosted: https://<host>:<port>
+  api_token_env: "INSTANA_API_TOKEN"        # nombre de la variable de entorno con el API token
+  verify_ssl: true
+  timeout_seconds: 30
+
+governance:
+  csv_path: "config/governance.example.csv"   # owner/team/runbook por app, llenado a mano
+
+# Alcance de aplicaciones a evaluar. Si se omite este bloque completo, el
+# comportamiento por defecto es require_traffic:true y sin tope (top_n
+# vacio) -evalua todas las apps con trafico, sin recortar la lista.
+scope:
+  name_filter: ""          # p.ej. "PROD" para filtrar por nomenclatura del cliente
+  require_traffic: true    # true = solo apps con servicios/endpoints en window_hours
+                            # false = TODO el catalogo, incluidas apps abandonadas/sin trafico
+  top_n:                    # vacio = sin tope | 20 = solo el Top 20 por volumen observable
+  window_hours: 24         # ventana para medir trafico. La API usa 10 min si no se fija esto
+  events_lookback_days: 7  # ventana para la dimension Eventos
+
+rubric_path: "config/rubric.yaml"
+
+output:
+  html_path: "out/report.html"

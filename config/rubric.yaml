@@ -1,0 +1,152 @@
+# Rubrica de scoring de madurez en observabilidad Instana.
+# Basada en la hoja "Metodologia" del assessment manual (Assessment Madurez Instana ejemplo.xlsx).
+#
+# NOTA DE CALIBRACION: los multiplicadores full/partial/none de abajo son un criterio
+# limpio y consistente (100% / 50% / 0% del peso de la dimension). El ejemplo manual
+# tiene puntajes con cierta inconsistencia (p.ej. "Parcial" a veces vale 33%, otras 50%
+# del peso segun el criterio del analista). Automatizar con multiplicadores fijos es
+# intencional: menos fiel al ejemplo puntual, pero reproducible entre apps y entre clientes.
+# Ajustar aqui si tras calibrar contra un tenant real se prefiere otra escala.
+
+evidence_multipliers:
+  full: 1.0      # "Si" -> evidencia completa
+  partial: 0.5   # "Parcial" -> evidencia parcial
+  none: 0.0      # "No evidenciado"
+
+# criteria (full/partial/none) es la referencia legible de lo que cada
+# collectors/*.py implementa. NO la lee el scoring — vive en el codigo,
+# donde hay que confiar en ella — pero mantenerla aqui evita tener que leer
+# 8 archivos para saber por que una app saco "Parcial" en vez de "Si".
+# Regla que se repite en casi todas las dimensiones: un vinculo por ID
+# (aplicacion, servicio o endpoint) da full; un vinculo solo por coincidencia
+# de nombre nunca pasa de partial, porque el nombre no es una fuente fiable
+# (ver Recomendaciones del assessment manual, brecha #1: naming no normalizado).
+
+dimensions:
+  - key: apm
+    name: APM
+    weight: 20
+    source: instana_api
+    evidence: "Aplicacion visible, servicios, calls, latencia, error rate y health."
+    criteria:
+      full: "tiene servicios Y endpoints descubiertos"
+      partial: "tiene servicios O endpoints, no ambos (instrumentacion incompleta)"
+      none: "entidad vacia: catalogada pero sin nada observado"
+  - key: rum
+    name: RUM/Mobile/Synthetic
+    weight: 15
+    source: instana_api
+    evidence: "Website/mobile/test sintetico asociado directa o a nivel de nomenclatura de la aplicacion."
+    criteria:
+      full: "test sintetico con applicationId que apunta a la app (vinculo formal declarado en Instana)"
+      partial: "coincidencia de nombre entre website/mobile/sintetico y la app -incluye el appName de un website, que NO es un vinculo formal: es igual a su propio nombre siempre (verificado, 0 excepciones en 34 webapps)"
+      none: "sin website, mobile app ni sintetico asociado"
+  - key: slo
+    name: SLO/Apdex
+    weight: 15
+    source: instana_api
+    evidence: "SLO, Apdex o metrica de satisfaccion/objetivo de servicio configurada."
+    criteria:
+      full: "SLO cuyo entity.applicationId/serviceId/endpointId apunta a la app (enlace por ID)"
+      partial: "SLO sin ID de enlace (p.ej. tipo synthetic) que solo coincide por nombre"
+      none: "sin SLO asociado"
+  - key: alerts
+    name: Smart Alerts
+    weight: 15
+    source: instana_api
+    evidence: "Alertas especificas o globales aplicables a la aplicacion."
+    criteria:
+      full: "alerta habilitada (enabled=true) que cubre la app por applicationId Y tiene canal de aviso configurado"
+      partial: "alerta que cubre la app por ID pero esta deshabilitada o sin canal (ruido inactivo)"
+      none: "ninguna alerta cubre la app"
+  - key: dashboard
+    name: Dashboard
+    weight: 10
+    source: instana_api
+    evidence: "Dashboard PROD asociado a la aplicacion, canal o entidad tecnica."
+    criteria:
+      full: "algun widget del dashboard filtra explicitamente por application.name o service.name de la app (tagFilterExpression)"
+      partial: "solo el titulo del dashboard coincide con el nombre de la app (sin evidencia en los widgets)"
+      none: "ningun dashboard la referencia"
+  - key: infra
+    name: Infraestructura
+    weight: 10
+    source: instana_api
+    evidence: "Zona, host, cloud o infraestructura vinculada a la aplicacion."
+    criteria:
+      full: "se conoce la tecnologia de ejecucion de sus endpoints (technologies) Y hay infraestructura monitoreada en el tenant"
+      partial: "la app tiene servicios pero no se identifico la capa de ejecucion"
+      none: "sin vinculo con infraestructura"
+  - key: events
+    name: Eventos/Diagnostico
+    weight: 10
+    source: instana_api
+    evidence: "Evidencia de events/issues/incidents o diagnostico asociado."
+    criteria:
+      full: "evento de tipo 'issue' enlazado por ID (snapshotId o metrics[].entityId.steadyId) a la app/servicio/endpoint"
+      partial: "solo eventos de cambio/estado, o el enlace fue por coincidencia exacta de entityLabel"
+      none: "sin eventos de aplicacion/servicio/endpoint en la ventana evaluada"
+  - key: governance
+    name: Gobierno
+    weight: 5
+    source: hibrido
+    evidence: "Owner, team, runbook o ITSM evidenciado. Parte via API (dashboards.ownerId, Automation Actions por nombre), parte manual (governance.csv: itsm_integrated no vive en Instana)."
+    criteria:
+      full: "2 o mas señales (owner/team del CSV, runbook/ITSM del CSV, ownerId de un dashboard asociado, accion de automatizacion que la referencia)"
+      partial: "exactamente 1 señal"
+      none: "ninguna señal"
+
+# Bandas de nivel de madurez (0-100, ancho fijo de 20 puntos).
+# Igual que arriba: son un criterio propio, no una copia exacta de los cortes del
+# ejemplo manual (que no siguen una formula estricta). Ajustables tras calibrar.
+levels:
+  - level: 1
+    name: "Reactivo / Inicial"
+    min_score: 0
+    max_score: 19
+    definition: >
+      La observabilidad es limitada, fragmentada o dependiente de revisiones manuales.
+      Existen monitoreos aislados, pero no hay una vision consolidada de aplicaciones,
+      servicios, infraestructura, experiencia digital o eventos. La deteccion suele
+      ocurrir despues del incidente o por reporte de usuarios.
+  - level: 2
+    name: "Instrumentado"
+    min_score: 20
+    max_score: 39
+    definition: >
+      Existen capacidades tecnicas de monitoreo implementadas. Las aplicaciones,
+      servicios o infraestructura ya generan senales observables como metricas,
+      llamadas, latencia, errores o estado de salud. Sin embargo, la informacion
+      todavia se usa principalmente para visibilidad tecnica y no necesariamente
+      para gestion operativa continua, SLOs o toma de decisiones.
+  - level: 3
+    name: "Operativo / Correlacionado inicial"
+    min_score: 40
+    max_score: 59
+    definition: >
+      La organizacion ya utiliza la observabilidad para diagnostico operativo. Se
+      evidencian relaciones entre aplicaciones, servicios, infraestructura, alertas,
+      dashboards, eventos, logs o experiencia digital. Permite investigar incidentes
+      con mayor rapidez, aunque todavia puede faltar estandarizacion, ownership
+      formal, SLOs completos o integracion con procesos ITSM.
+  - level: 4
+    name: "Confiabilidad inicial / Tecnica"
+    min_score: 60
+    max_score: 79
+    definition: >
+      La observabilidad empieza a gestionarse con criterios de confiabilidad. Existen
+      SLOs, Apdex, alertas especificas, dashboards operativos y seguimiento tecnico
+      sobre aplicaciones criticas. Sin embargo, la madurez aun puede estar concentrada
+      en la capa tecnica y no completamente formalizada en gobierno, error budgets,
+      runbooks, responsables, procesos de mejora continua o decisiones de negocio.
+  - level: 5
+    name: "Optimizado / Automatizado / Orientado a negocio"
+    min_score: 80
+    max_score: 100
+    definition: >
+      La observabilidad esta integrada al modelo operativo y de negocio. Las senales
+      tecnicas se conectan con journeys, procesos de negocio, SLOs, automatizacion,
+      remediacion, analisis predictivo y mejora continua. Existen responsables claros,
+      procesos estandarizados, integracion con ITSM, reduccion de ruido, gestion de
+      error budgets y toma de decisiones basada en confiabilidad e impacto al
+      usuario/negocio.
