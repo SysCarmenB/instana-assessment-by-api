@@ -29,24 +29,7 @@ completa en un CSV (`config/governance.example.csv`).
 pip install -r requirements.txt
 ```
 
-## Uso rapido (sin tocar Instana, con datos de ejemplo)
-
-```bash
-python -m instana_assessment.cli \
-  --config config/client.yaml \
-  --source csv \
-  --input config/example_evidence.csv
-```
-
-Genera `out/report_YYYYMMDD_HHMMSS.html` y `out/report_YYYYMMDD_HHMMSS.csv`.
-
-`config/example_evidence.csv` esta digitalizado a partir de un Excel manual
-(Top 20 PROD) usando la evidencia cualitativa (Si/Parcial/No).
-
-Este modo tambien sirve para digitalizar un assessment hecho a mano (capturas de
-pantalla) sin necesidad de conectarse a la API.
-
-## Uso contra un tenant real de Instana
+## Uso contra un tenant de Instana
 
 ### 1. Preparar el config del cliente
 
