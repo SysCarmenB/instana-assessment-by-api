@@ -9,15 +9,12 @@ adicional.
 1. **Evidencia por aplicacion** en 8 dimensiones (APM, RUM/Mobile/Synthetic,
    SLO/Apdex, Smart Alerts, Dashboard, Infraestructura, Eventos, Gobierno) se
    clasifica como `Si` / `Parcial` / `No evidenciado`.
-2. **Scoring**: cada dimension tiene un peso (ver `config/rubric.yaml`, igual
-   a la hoja *Metodologia* del Excel manual). El score de una app es la suma
+2. **Scoring**: cada dimension tiene un peso (ver `config/rubric.yaml`). El score de una app es la suma
    ponderada; el nivel de madurez (1-5) sale de bandas de 20 puntos.
 3. **Recomendaciones**: reglas deterministas sobre los promedios por dimension
    y sobre las apps en nivel 1-2.
-4. **Salidas**: un HTML autocontenido y un CSV con el mismo formato de columnas
-   que la hoja *Scoring Top 20 PROD* del Excel. Ambos archivos incluyen un
-   timestamp en el nombre (`report_YYYYMMDD_HHMMSS.html / .csv`) para no
-   sobreescribir ejecuciones anteriores.
+4. **Salidas**: un HTML autocontenido y un CSV con el detalle. Ambos archivos incluyen un
+   timestamp en el nombre (`report_YYYYMMDD_HHMMSS.html / .csv`) de la fecha y hora de ejecución.
 
 **Guia paso a paso para ejecutarlo en tu propio tenant: ver [MANUAL.md](MANUAL.md).**
 
