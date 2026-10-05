@@ -132,7 +132,7 @@ def build_html(
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Assessment de Madurez Instana - {_esc(client_name)}</title>
+<title>Assessment de Instana - {_esc(client_name)}</title>
 <style>
   body {{ font-family: -apple-system, Segoe UI, Arial, sans-serif; margin: 0; padding: 32px;
          color: #1a1a1a; background: #f7f8fa; }}
@@ -155,7 +155,7 @@ def build_html(
 </style>
 </head>
 <body>
-  <h1>Assessment de Madurez en Observabilidad Instana</h1>
+  <h1>Assessment de Instana</h1>
   <div class="subtitle">{_esc(client_name)} &middot; corte {today} &middot; fuente de datos: {_esc(source_label)} &middot; {n_apps} aplicaciones evaluadas</div>
 
   <div class="kpis">
