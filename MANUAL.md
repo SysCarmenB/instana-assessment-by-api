@@ -17,8 +17,8 @@ Tiempo estimado: 15 minutos de preparación + ~1 minuto de ejecución cada ~80 a
 ## 2. Instalación
 
 ```bash
-git clone <URL-DEL-REPOSITORIO> insta-assessment
-cd insta-assessment
+git clone <URL-DEL-REPOSITORIO> instana-assessment
+cd instana-assessment
 python -m venv .venv
 ```
 
