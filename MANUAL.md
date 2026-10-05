@@ -1,4 +1,4 @@
-# Manual de ejecución — Instana Maturity Assessment
+# Manual de ejecución Assessment de Instana
 
 Mide el nivel de madurez de observabilidad de un tenant de Instana. Consulta la
 API REST (solo lectura, no modifica nada), puntúa cada aplicación en 8
@@ -22,16 +22,12 @@ cd instana-assessment
 python -m venv .venv
 ```
 
-Activar el entorno virtual:
+Instala las dependencias **usando el Python del entorno virtual** (no hace falta activarlo):
 
 | Sistema | Comando |
 |---|---|
-| Windows PowerShell | `.venv\Scripts\Activate.ps1` |
-| Linux / macOS | `source .venv/bin/activate` |
-
-```bash
-pip install -r requirements.txt
-```
+| Windows PowerShell | `.venv\Scripts\python.exe -m pip install -r requirements.txt` |
+| Linux / macOS | `.venv/bin/python -m pip install -r requirements.txt` |
 
 Solo instala dos librerías: `requests` y `PyYAML`.
 
@@ -39,11 +35,9 @@ Solo instala dos librerías: `requests` y `PyYAML`.
 
 En la interfaz de Instana: **Settings → API Tokens → Add API Token** (según la versión puede estar bajo *Team Settings*).
 
-- Dale **solo permisos de lectura/vista**. El assessment nunca escribe ni configura nada.
-- Si más adelante aparece un error `403` con el texto *"The missing permissions are
-  canXxx"*, Instana te dice exactamente qué permiso falta: otórgalo **en su versión de
-  vista**, no de configuración. Caso conocido: `canViewSyntheticTests` (necesario para
-  evaluar los tests sintéticos).
+- El assessment nunca escribe ni configura nada.
+- Para evaluar los **tests sintéticos**, en la lista de permisos del token activa
+  **"Access to synthetic tests"** (categoría *Synthetic monitoring*).
 
 > El token **nunca** se guarda en un archivo ni se sube al repositorio. Solo se
 > exporta como variable de entorno en tu sesión (paso 5).
@@ -73,13 +67,11 @@ Bloque `scope` (opcional) en el mismo archivo:
 |---|---|
 | `require_traffic: true` | Solo apps con servicios/endpoints en las últimas `window_hours` (**por defecto**) |
 | `require_traffic: false` | **Todo el catálogo**, incluidas perspectivas abandonadas |
+| `window_hours: 24` | Ventana para medir el tráfico (24 horas por defecto; `168` = 7 días) |
 | `top_n: 20` | Solo las 20 de mayor volumen (vacío = sin tope) |
 | `name_filter: "PROD"` | Solo apps cuyo nombre contenga ese texto |
 
-> **Importante:** un tenant suele acumular perspectivas de aplicación sin tráfico.
-> Con `require_traffic: false` sacan puntaje ~0 y **hunden el promedio general**
-> (en un tenant de pruebas: 49 con filtro vs 8 sin filtro). Decide cuál de las dos
-> vistas es la que vas a reportar.
+> **Por defecto solo se evalúan las aplicaciones con tráfico, y es lo recomendado.**
 
 ### Gobierno (opcional)
 
@@ -113,10 +105,16 @@ export INSTANA_API_TOKEN="tu-token-aqui"
 
 Dura solo mientras la terminal esté abierta.
 
-## 6. Verificar conectividad (recomendado)
+## 6. Verificar conectividad (opcional)
 
+**Windows PowerShell**
+```powershell
+.venv\Scripts\python.exe scripts\smoke_test.py --config config\client.yaml
+```
+
+**Linux / macOS**
 ```bash
-python scripts/smoke_test.py --config config/client.yaml
+.venv/bin/python scripts/smoke_test.py --config config/client.yaml
 ```
 
 Debe mostrar `OK` en cada línea:
@@ -138,8 +136,14 @@ Debe mostrar `OK` en cada línea:
 
 ## 7. Ejecutar el assessment
 
+**Windows PowerShell**
+```powershell
+.venv\Scripts\python.exe -m instana_assessment.cli --config config\client.yaml --source live
+```
+
+**Linux / macOS**
 ```bash
-python -m instana_assessment.cli --config config/client.yaml --source live
+.venv/bin/python -m instana_assessment.cli --config config/client.yaml --source live
 ```
 
 > `--source live` es **obligatorio**. Sin él, el programa corre en modo demo con
@@ -157,9 +161,7 @@ Apps evaluadas: 12 | Score promedio: 41.3 | Nivel estimado: 3
 ```
 
 (Los números son ilustrativos.) La línea **"descubiertas -> en alcance"** indica
-cuántas aplicaciones se evaluaron realmente: con el alcance por defecto
-(`require_traffic: true`) pueden ser muchas menos que las descubiertas. Si "en
-alcance" sale en 0 o te parece bajo, revisa el bloque `scope` del paso 4.
+cuántas aplicaciones se evaluaron realmente.
 
 Los archivos quedan en `out/` con fecha y hora en el nombre: **cada corrida crea
 archivos nuevos, no sobrescribe los anteriores**.
@@ -194,12 +196,15 @@ máximo Parcial.** Niveles: 1 (0–19) · 2 (20–39) · 3 (40–59) · 4 (60–
 
 | Síntoma | Causa / solución |
 |---|---|
+| `Activate.ps1 ... la ejecución de scripts está deshabilitada` | Política de PowerShell. No actives el entorno: usa `.venv\Scripts\python.exe` (paso 2). Alternativa solo para esa ventana: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` (si tu organización lo bloquea por política de grupo, usa la primera opción) |
+| `ModuleNotFoundError: No module named 'requests'` | Estás usando el Python del sistema en vez del del entorno: ejecuta con `.venv\Scripts\python.exe` (Windows) o `.venv/bin/python` (Linux / macOS) |
 | Corre en modo demo (20 apps `App1…`) | Faltó `--source live` |
 | `[WARN] ... HTTP 403` | Falta un permiso de vista en el token; el mensaje de Instana lo nombra |
 | Una dimensión sale en 0 en todas las apps | Mira si hay un `[WARN]` en la salida: suele ser permiso o módulo ausente, no falta real de datos |
 | `SSLError` | Self-hosted con certificado propio → `verify_ssl: false` |
 | Tarda mucho | Son ~2 llamadas por aplicación; con cientos de apps usa `top_n` o `name_filter` |
 | `[RATE] quedan N llamadas; esperando...` | Normal: el programa respeta el límite de la API y espera solo |
+| Solo se evalúa 1 aplicación (o muy pocas) | Filtro de tráfico por defecto (bloque `scope`, paso 4) o token con acceso limitado por alcance |
 | Score muy bajo con muchas apps | Perspectivas sin tráfico → deja `require_traffic: true` |
 
 ## 10. Limitaciones que debes conocer
